@@ -11,6 +11,8 @@ export class Transaction {
   @Prop()
   txHash: string;
 
+
+
 }
 
 
