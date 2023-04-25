@@ -7,24 +7,28 @@ import { FilterQuery, Model } from 'mongoose';
 export class TransactionRepository {
   constructor(
     @InjectModel(Transaction.name)
-    private transactionModel: Model<TransactionDocument>,
+    private transactionModel: Model<TransactionDocument>
   ) {
   }
 
   async findOne(
-    transactionFilterQuery: FilterQuery<Transaction>,
+    transactionFilterQuery: FilterQuery<Transaction>
   ): Promise<Transaction> {
     return this.transactionModel.findOne(transactionFilterQuery);
   }
 
   async find(
-    transactionsFilterQuery: FilterQuery<Transaction>,
+    transactionsFilterQuery: FilterQuery<Transaction>
   ): Promise<Transaction[]> {
-    return this.transactionModel.findOne(transactionsFilterQuery);
+    return this.transactionModel.find(transactionsFilterQuery);
   }
 
   async create(tx: Transaction): Promise<Transaction> {
     const newTX = new this.transactionModel(tx);
-    return newTX.save();
+    return await newTX.save();
+  }
+
+  async createMany(txs: Transaction[]) {
+    return await this.transactionModel.insertMany(txs);
   }
 }
