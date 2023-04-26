@@ -53,7 +53,7 @@ export class Transaction {
     this.gasLimit = gasLimit;
     this.block = block;
     this.value = value;
-    this.data= data;
+    this.data = data;
     this.status = status;
   }
 }

@@ -5,20 +5,25 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { BlockFetchedEvent } from '../events/blockfetched.event';
 import { TransactionService } from '../transactions/transaction.service';
 import { Transaction } from '../transactions/schemas/transaction.schema';
+import { TransactionProducerService } from '../transactions/transactionProducer.service';
 
 @Injectable()
 export class EthersService {
-  networkName = 'goerli';
-  apiProvider = 'alchemy';
-  confirmations = 5; // n of confirmations to wait
-  indexedBlocks: number[] = [];
+  private networkName = 'goerli';
+  private apiProvider = 'alchemy';
+  private confirmations = 5; // n of confirmations to wait
+  private indexedBlocks: number[] = [];
+  startup = 1;
 
   private readonly logger = new Logger(EthersService.name);
+  private flag = 0;
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
     private readonly transactionService: TransactionService,
+    private readonly transactionProducer: TransactionProducerService
   ) {
+
   }
 
   async getProvider(): Promise<ethers.providers.Provider> {
@@ -52,11 +57,19 @@ export class EthersService {
   async fetchNewBlock() {
     try {
       const provider = await this.getProvider();
-      const latestBlockNumber = (await provider.getBlockNumber()) - this.confirmations;
+      let latestBlockNumber = (await provider.getBlockNumber()) - this.confirmations;
+
+      const lastBlockInDB = this.getLatestIndexedBlock();
+
+      // if we're missing blocks
+      if (this.startup === 1 && lastBlockInDB != -1 && latestBlockNumber - 1 > lastBlockInDB) {
+        latestBlockNumber = lastBlockInDB;
+        this.startup = 0;
+      }
 
       if (this.indexedBlocks.includes(latestBlockNumber)) return;
 
-      this.indexedBlocks.push(latestBlockNumber);
+
       this.logger.log('Fetching block: ', latestBlockNumber);
 
       const latestBlock: ethers.providers.Block = await provider.getBlock(
@@ -97,7 +110,6 @@ export class EthersService {
       for (const txHash of blockFetched.transactions) {
         const tx = await provider.getTransaction(txHash);
         const txReceipt = await provider.getTransactionReceipt(txHash);
-
         const formattedTX = this.formatTX(
           tx,
           txReceipt,
@@ -109,6 +121,7 @@ export class EthersService {
 
       this.logger.log('Inserting ' + finalTXs.length + ' transactions from block ' + finalTXs[0].block + ' in DB.');
       await this.transactionService.createTransactions(finalTXs);
+
 
     } catch (e) {
       this.logger.error(e);
@@ -125,11 +138,14 @@ export class EthersService {
     timestamp: number
   ): Transaction {
 
-    return new Transaction(
+    const from = txReceipt.from !== null ? txReceipt.from.toLowerCase() : '0x0';
+    const to = txReceipt.to !== null ? txReceipt.to.toLowerCase() : '0x0';
+
+    const formattedTx = new Transaction(
       txReceipt.transactionHash,
       timestamp,
-      txReceipt.from,
-      txReceipt.to,
+      from,
+      to,
       txReceipt.gasUsed.toNumber(),
       txReceipt.effectiveGasPrice.toNumber(),
       tx.gasLimit.toNumber(),
@@ -138,5 +154,12 @@ export class EthersService {
       tx.data,
       txReceipt.status === 1
     );
+    return formattedTx;
+  }
+
+  getLatestIndexedBlock(): number {
+    if (this.indexedBlocks.length === 0)
+      return -1;
+    return Math.max(...this.indexedBlocks);
   }
 }

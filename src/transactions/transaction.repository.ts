@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Transaction, TransactionDocument } from './schemas/transaction.schema';
 import { FilterQuery, Model } from 'mongoose';
@@ -23,12 +23,20 @@ export class TransactionRepository {
     return this.transactionModel.find(transactionsFilterQuery);
   }
 
+
   async create(tx: Transaction): Promise<Transaction> {
     const newTX = new this.transactionModel(tx);
     return await newTX.save();
   }
 
   async createMany(txs: Transaction[]) {
-    return await this.transactionModel.insertMany(txs);
+    try {
+      return await this.transactionModel.insertMany(txs);
+    } catch (e) {
+      if (e.code === 11000) {
+        throw new ConflictException('Found duplicate tx, skipping.');
+      }
+      throw e;
+    }
   }
 }
