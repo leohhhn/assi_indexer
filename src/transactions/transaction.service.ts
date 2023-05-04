@@ -5,17 +5,14 @@ import { TransactionRepository } from './transaction.repository';
 
 @Injectable()
 export class TransactionService {
-  constructor(
-    private readonly transactionRepository: TransactionRepository
-  ) {
-  }
+  constructor(private readonly transactionRepository: TransactionRepository) {}
 
   async getTransactionById(txHash: string): Promise<Transaction> {
-    return this.transactionRepository.findOne({ txHash });
+    return this.transactionRepository.findOne({ txHash }, {});
   }
 
   async getTransactions(): Promise<Transaction[]> {
-    return this.transactionRepository.find({ sort: { _id: -1 }, limit: 500 });
+    return this.transactionRepository.find({});
   }
 
   async getTransactionsFrom(from: string): Promise<Transaction[]> {
@@ -26,26 +23,21 @@ export class TransactionService {
     return this.transactionRepository.find({ to: to });
   }
 
-  async getTransactionsBetweenTimestamps(
-    start: number,
-    end: number
-  ): Promise<Transaction[]> {
+  async getTransactionsBetweenTimestamps(start: number, end: number): Promise<Transaction[]> {
     return this.transactionRepository.find({
       timestamp: {
         $gte: start,
-        $lte: end
-      }
+        $lte: end,
+      },
     });
   }
 
-  async createTransactions(txs: Transaction[]): Promise<Transaction[]> {
+  async createTransactions(txs: Transaction[]) {
     try {
-      return this.transactionRepository.createMany(txs);
+      this.transactionRepository.createMany(txs);
     } catch (error) {
       if (error.code === 11000) {
-        throw new ConflictException(
-          `Found duplicate transaction, not inserting.`
-        );
+        throw new ConflictException(`Found duplicate transaction, not inserting.`);
       } else {
         throw error;
       }
@@ -58,5 +50,14 @@ export class TransactionService {
 
   async getTransactionsBetween(from: string, to: string): Promise<Transaction[]> {
     return await this.transactionRepository.find({ from: from, to: to });
+  }
+
+  async getLatestBlockInDB(): Promise<number> {
+    const options = {
+      sort: { block: -1 }, // Sort in descending order based on the "block" property
+    };
+    const tx = await this.transactionRepository.findOne({}, options);
+    if (tx === null) return 0;
+    return tx.block;
   }
 }

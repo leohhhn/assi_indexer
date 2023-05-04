@@ -5,16 +5,15 @@ import { TransactionController } from './transaction.controller';
 import { TransactionService } from './transaction.service';
 import { TransactionRepository } from './transaction.repository';
 import { EthersService } from '../web3/ethers.service';
-import { TransactionProducerService } from './transactionProducer.service';
+import { BlockJobProducerService } from './blockJobProducer.service';
 import { BullModule } from '@nestjs/bull';
+import { BlockConsumerService } from './blockConsumer.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Transaction.name, schema: TransactionSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Transaction.name, schema: TransactionSchema }]),
     BullModule.registerQueue({
-      name: 'tx-format-queue',
+      name: 'blocks',
     }),
   ],
   controllers: [TransactionController],
@@ -22,7 +21,8 @@ import { BullModule } from '@nestjs/bull';
     TransactionService,
     TransactionRepository,
     EthersService,
-    TransactionProducerService,
+    BlockJobProducerService,
+    BlockConsumerService,
   ],
 })
 export class TransactionModule {}

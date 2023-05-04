@@ -11,18 +11,18 @@ export class Transaction {
   txHash: string;
   @Prop()
   timestamp: number;
-  @Prop()
+  @Prop({ index: true })
   from: string;
   @Prop()
   to: string;
   @Prop()
-  gas: number;
+  gas: string;
   @Prop()
-  gasPrice: number;
+  gasPrice: string;
   @Prop()
-  gasLimit: number;
+  gasLimit: string;
 
-  @Prop()
+  @Prop({ index: true })
   block: number;
   @Prop()
   value: string;
@@ -36,13 +36,13 @@ export class Transaction {
     timestamp: number,
     from: string,
     to: string,
-    gas: number,
-    gasPrice: number,
-    gasLimit: number,
+    gas: string,
+    gasPrice: string,
+    gasLimit: string,
     block: number,
     value: string,
     data: string,
-    status: boolean
+    status: boolean,
   ) {
     this.txHash = txHash;
     this.timestamp = timestamp;
