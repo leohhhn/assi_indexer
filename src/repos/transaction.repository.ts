@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Transaction, TransactionDocument } from './schemas/transaction.schema';
+import { Transaction, TransactionDocument } from '../schemas/transaction.schema';
 import { FilterQuery, Model, QueryOptions } from 'mongoose';
 
 @Injectable()
@@ -37,5 +37,9 @@ export class TransactionRepository {
     } catch (e) {
       throw new Error(e);
     }
+  }
+
+  async fetchNumOfTX(): Promise<number> {
+    return await this.transactionModel.countDocuments({});
   }
 }

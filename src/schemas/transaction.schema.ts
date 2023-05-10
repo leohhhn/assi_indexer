@@ -1,12 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { EventFilter } from 'ethers';
 import { Document } from 'mongoose';
+import { v4 as uuid } from 'uuid';
 
 export type TransactionDocument = Transaction & Document;
 
 @Schema()
 export class Transaction {
   @Prop()
-  txID: string;
+  _id: string;
   @Prop({ unique: true })
   txHash: string;
   @Prop()
@@ -21,7 +23,6 @@ export class Transaction {
   gasPrice: string;
   @Prop()
   gasLimit: string;
-
   @Prop({ index: true })
   block: number;
   @Prop()
@@ -30,6 +31,8 @@ export class Transaction {
   data: string;
   @Prop()
   status: boolean;
+  @Prop()
+  logs: Array<EventFilter>;
 
   constructor(
     txHash: string,
@@ -43,7 +46,9 @@ export class Transaction {
     value: string,
     data: string,
     status: boolean,
+    // logs: Array<string>, // todo implement
   ) {
+    this._id = uuid();
     this.txHash = txHash;
     this.timestamp = timestamp;
     this.from = from;

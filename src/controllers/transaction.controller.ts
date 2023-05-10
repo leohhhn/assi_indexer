@@ -1,9 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-
-import { Transaction } from './schemas/transaction.schema';
-import { TransactionService } from './transaction.service';
-import { EthersService } from '../web3/ethers.service';
-``;
+import { Transaction } from 'src/schemas/transaction.schema';
+import { EthersService } from 'src/services/ethers.service';
+import { TransactionService } from 'src/services/transaction.service';
 
 @Controller('transactions')
 export class TransactionController {

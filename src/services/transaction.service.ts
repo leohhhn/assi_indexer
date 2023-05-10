@@ -1,7 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-
-import { Transaction } from './schemas/transaction.schema';
-import { TransactionRepository } from './transaction.repository';
+import { Transaction } from '../schemas/transaction.schema';
+import { TransactionRepository } from '../repos/transaction.repository';
 
 @Injectable()
 export class TransactionService {
@@ -45,7 +44,7 @@ export class TransactionService {
   }
 
   async getTransactionsAtHeight(blockNumber: number): Promise<Transaction[]> {
-    return await this.transactionRepository.find({ blockNumber });
+    return await this.transactionRepository.find({ block: blockNumber });
   }
 
   async getTransactionsBetween(from: string, to: string): Promise<Transaction[]> {
@@ -59,5 +58,9 @@ export class TransactionService {
     const tx = await this.transactionRepository.findOne({}, options);
     if (tx === null) return 0;
     return tx.block;
+  }
+
+  async getIndexedTXCount(): Promise<number> {
+    return this.transactionRepository.fetchNumOfTX();
   }
 }

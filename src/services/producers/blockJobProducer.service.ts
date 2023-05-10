@@ -5,9 +5,10 @@ import { BlockWithTransactions } from 'zksync-web3/build/src/types';
 
 @Injectable()
 export class BlockJobProducerService {
-  constructor(@InjectQueue('blocks') private queue: Queue) {}
+  constructor(@InjectQueue('blocks_queue') private queue: Queue) {}
 
   async addBlockJob(blockToProcess: BlockWithTransactions) {
     await this.queue.add('block_job', blockToProcess, { jobId: blockToProcess.number });
+    
   }
 }
