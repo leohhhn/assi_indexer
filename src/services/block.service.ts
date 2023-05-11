@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { Block } from '../schemas/block.schema';
 import { BlockRepository } from 'src/repos/block.repository';
@@ -12,7 +12,23 @@ export class BlockService {
   }
 
   async getAllBlocks(): Promise<Block[]> {
-    return this.blockRepository.find({});
+    return this.blockRepository.find({}, null);
+  }
+
+  async getNumberOfIndexedBlocks(): Promise<number> {
+    return this.blockRepository.fetchNumOfBlocks();
+  }
+
+  async getLatest500Blocks(): Promise<Block[]> {
+    return this.blockRepository.find(
+      {},
+      {
+        sort: {
+          blockNumber: -1,
+        },
+        limit: 500,
+      },
+    );
   }
 
   async getBlocksFrom(from: string): Promise<Block[]> {
@@ -34,5 +50,9 @@ export class BlockService {
     const latestBlock = await this.blockRepository.findOne({}, options);
     if (latestBlock === null) throw new Error('No block found in DB');
     return latestBlock;
+  }
+
+  async createBlock(b: Block) {
+    await this.blockRepository.create(b);
   }
 }

@@ -11,7 +11,6 @@ import { BlockModule } from './modules/block.module';
 @Module({
   imports: [
     TransactionModule,
-    BlockModule,
     MongooseModule.forRoot('mongodb://localhost/indexer'),
     ConfigModule.forRoot(),
     EventEmitterModule.forRoot(),
@@ -29,7 +28,7 @@ import { BlockModule } from './modules/block.module';
       provide: 'DATABASE_CONNECTION',
       useFactory: async (): Promise<Connection> => {
         const connection = mongoose.createConnection('mongodb://localhost/indexer');
-        // await connection.dropDatabase();
+        await connection.dropDatabase();
         return connection;
       },
     },

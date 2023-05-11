@@ -14,8 +14,8 @@ export class BlockRepository {
     return this.blockModel.findOne(blockFilterQuery, null, options);
   }
 
-  async find(blockFilterQuery: FilterQuery<Block>): Promise<Block[]> {
-    return this.blockModel.find(blockFilterQuery);
+  async find(blockFilterQuery: FilterQuery<Block>, options: QueryOptions): Promise<Block[]> {
+    return this.blockModel.find(blockFilterQuery, null, options);
   }
 
   async create(b: Block): Promise<Block> {

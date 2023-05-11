@@ -10,11 +10,6 @@ export class TransactionController {
     private readonly ethersService: EthersService,
   ) {}
 
-  @Get('/bwt')
-  async getBlockWithTransactions() {
-    await this.ethersService.fetchNewBlock();
-  }
-
   @Get('/block/:blockNumber')
   async getTransactionsAtHeight(@Param('blockNumber') blockNumber: number): Promise<Transaction[]> {
     return await this.transactionService.getTransactionsAtHeight(blockNumber);

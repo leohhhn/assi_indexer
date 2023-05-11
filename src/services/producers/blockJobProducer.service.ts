@@ -9,6 +9,5 @@ export class BlockJobProducerService {
 
   async addBlockJob(blockToProcess: BlockWithTransactions) {
     await this.queue.add('block_job', blockToProcess, { jobId: blockToProcess.number });
-    
   }
 }

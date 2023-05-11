@@ -8,6 +8,8 @@ import { BlockJobProducerService } from '../services/producers/blockJobProducer.
 import { BullModule } from '@nestjs/bull';
 import { BlockConsumerService } from '../services/consumers/blockConsumer.service';
 import { TransactionController } from 'src/controllers/transaction.controller';
+import { BlockModule } from './block.module';
+import { BlockService } from 'src/services/block.service';
 
 @Module({
   imports: [
@@ -15,6 +17,7 @@ import { TransactionController } from 'src/controllers/transaction.controller';
     BullModule.registerQueue({
       name: 'blocks_queue',
     }),
+    BlockModule,
   ],
   controllers: [TransactionController],
   providers: [
@@ -23,6 +26,7 @@ import { TransactionController } from 'src/controllers/transaction.controller';
     EthersService,
     BlockJobProducerService,
     BlockConsumerService,
+    BlockService,
   ],
 })
 export class TransactionModule {}

@@ -1,7 +1,6 @@
-import { CronExpression } from '@nestjs/schedule';
+const confirmations = 15;
+const redundantBlocks = 15;
 
-export interface Config {
-  apiProvider: string;
-  confirmations: number;
-  fetchInterval: CronExpression;
-}
+const doRedundantBlocks = false;
+
+export { confirmations, redundantBlocks, doRedundantBlocks };

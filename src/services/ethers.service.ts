@@ -2,21 +2,20 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ethers } from 'ethers';
 import { TransactionService } from './transaction.service';
 import { BlockJobProducerService } from './producers/blockJobProducer.service';
-import { Block, BlockWithTransactions } from 'zksync-web3/build/src/types';
+import { BlockWithTransactions } from 'zksync-web3/build/src/types';
 import { Provider } from 'zksync-web3';
+import { confirmations, doRedundantBlocks, redundantBlocks } from 'src/config';
+import { BlockService } from './block.service';
+import { Block } from 'src/schemas/block.schema';
 
 @Injectable()
 export class EthersService implements OnModuleInit {
-  private confirmations = 15;
-  private redoBlocks = 15; // when indexer is not up-to-date, reindex latest x blocks in DB just in case
-  private pollRate = 500;
-  private poller;
-
   private readonly logger = new Logger(EthersService.name);
 
   constructor(
     private readonly transactionService: TransactionService,
     private readonly blockJobProducer: BlockJobProducerService,
+    private readonly blockService: BlockService,
   ) {}
 
   async onModuleInit() {
@@ -33,9 +32,11 @@ export class EthersService implements OnModuleInit {
     const latestBlockOnChain = await provider.getBlockNumber();
     this.logger.warn(`Latest on-chain block: ${latestBlockOnChain}`);
 
-    // this.poller = setInterval(() => {
-    //   this.fetchNewBlock();
-    // }, this.pollRate);
+    const wsProvider = await this.getWSProvider();
+
+    wsProvider.on('block', block => {
+      this.fetchNewBlock(block);
+    });
 
     // const lateBy = latestBlockOnChain - latestBlockNumberInDB;
     // if (lateBy > 0) {
@@ -49,32 +50,41 @@ export class EthersService implements OnModuleInit {
     return new Provider('https://mainnet.era.zksync.io');
   }
 
-  async fetchNewBlock() {
+  async getWSProvider(): Promise<ethers.providers.WebSocketProvider> {
+    return await new ethers.providers.WebSocketProvider('wss://mainnet.era.zksync.io/ws');
+  }
+
+  async fetchNewBlock(blockNumber: number) {
     try {
       const provider = await this.getProvider();
-      const latestBlockNumber = await this.getLatestOnChainBlockNumber(provider);
 
-      const latestBlock: BlockWithTransactions = await provider.getBlockWithTransactions(latestBlockNumber);
-
-      const latestRedundantBlock: BlockWithTransactions = await provider.getBlockWithTransactions(
-        latestBlockNumber - this.redoBlocks,
+      const latestConfirmedBlockNumber = blockNumber - confirmations;
+      const latestBlock: BlockWithTransactions = await provider.getBlockWithTransactions(
+        latestConfirmedBlockNumber,
       );
 
       this.logger.log(
-        `Fetching blocks ${latestBlockNumber} & ${latestBlockNumber - this.redoBlocks}, ${new Date(
-          latestBlock.timestamp * 1000,
-        ).toLocaleString()}`,
+        `Fetching blocks ${latestConfirmedBlockNumber} ${new Date(latestBlock.timestamp * 1000).toLocaleString()}`,
       );
 
       await this.blockJobProducer.addBlockJob(latestBlock);
-      // await this.blockJobProducer.addBlockJob(latestRedundantBlock); // do redundant block checks?
+      await this.blockService.createBlock(new Block(latestConfirmedBlockNumber, latestBlock.transactions.length));
+
+      // redundant block checks
+      if (doRedundantBlocks) {
+        const latestRedundantBlock: BlockWithTransactions = await provider.getBlockWithTransactions(
+          latestConfirmedBlockNumber - redundantBlocks,
+        );
+        await this.blockJobProducer.addBlockJob(latestRedundantBlock);
+      }
     } catch (error) {
       this.logger.error(error);
     }
   }
 
   async createCatchUpJobs(latestBlockInDB: number, latestBlockOnChain: number, provider: Provider) {
-    for (let i = latestBlockInDB - this.redoBlocks; i < latestBlockOnChain; i++) {
+    for (let i = latestBlockInDB - redundantBlocks; i < latestBlockOnChain; i++) {
+      // todo check why latestBlockInDB - redundantBlocks
       this.logger.log(`CATCHUP: fetching block ${i}`);
       const latestBlock: BlockWithTransactions = await provider.getBlockWithTransactions(i);
       await this.blockJobProducer.addBlockJob(latestBlock);
@@ -86,7 +96,7 @@ export class EthersService implements OnModuleInit {
   }
 
   async getLatestOnChainBlockNumber(provider: Provider): Promise<number> {
-    return (await provider.getBlockNumber()) - this.confirmations;
+    return (await provider.getBlockNumber()) - confirmations;
   }
 
   async getWholeBlock(blockNumber: string): Promise<BlockWithTransactions> {

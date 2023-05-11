@@ -6,6 +6,8 @@ import { Transaction } from '../../schemas/transaction.schema';
 import { Provider } from 'zksync-web3';
 import { Logger } from '@nestjs/common';
 import { TransactionService } from '../transaction.service';
+import { BlockService } from '../block.service';
+import { Block } from 'src/schemas/block.schema';
 
 @Processor('blocks_queue')
 export class BlockConsumerService {
@@ -16,11 +18,10 @@ export class BlockConsumerService {
   async doJob(job: Job<BlockWithTransactions>) {
     try {
       const block = job.data;
-      if (block.transactions.length == 0) return; // if empty block, nothing to index
 
-      const provider = await this.getProvider();
       const finalTXs: Transaction[] = [];
 
+      const provider = await this.getProvider();
       // fetch TX from API
       for (const tx of block.transactions) {
         const txReceipt: TransactionReceipt = await provider.getTransactionReceipt(tx.hash);
@@ -28,8 +29,10 @@ export class BlockConsumerService {
         finalTXs.push(formattedTX);
       }
 
-      this.logger.error('Inserting ' + finalTXs.length + ' transactions from block ' + block.number + ' in DB.');
-      await this.transactionService.createTransactions(finalTXs);
+      if (finalTXs.length !== 0) {
+        await this.transactionService.createTransactions(finalTXs);
+        this.logger.error('Inserting ' + finalTXs.length + ' transactions from block ' + block.number + ' in DB.');
+      }
     } catch (error) {
       this.logger.error(error);
     }
