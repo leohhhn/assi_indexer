@@ -16,7 +16,9 @@ export class BlockService {
   }
 
   async getNumberOfIndexedBlocks(): Promise<number> {
-    return this.blockRepository.fetchNumOfBlocks();
+    const num = await this.blockRepository.fetchNumOfBlocks();
+    if (num <= 0) throw new Error(`Still no indexed block in DB`);
+    return num;
   }
 
   async getLatest500Blocks(): Promise<Block[]> {

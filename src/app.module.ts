@@ -6,11 +6,12 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
-import { BlockModule } from './modules/block.module';
+import { ConsistencyModule } from './modules/consistency.module';
 
 @Module({
   imports: [
     TransactionModule,
+    ConsistencyModule,
     MongooseModule.forRoot('mongodb://localhost/indexer'),
     ConfigModule.forRoot(),
     EventEmitterModule.forRoot(),

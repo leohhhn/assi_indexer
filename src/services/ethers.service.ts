@@ -7,6 +7,7 @@ import { Provider } from 'zksync-web3';
 import { confirmations, doRedundantBlocks, redundantBlocks } from 'src/config';
 import { BlockService } from './block.service';
 import { Block } from 'src/schemas/block.schema';
+import { getProvider, getWSProvider } from 'src/helpers/helpers';
 
 @Injectable()
 export class EthersService implements OnModuleInit {
@@ -24,7 +25,7 @@ export class EthersService implements OnModuleInit {
 
   async init() {
     this.logger.warn(`Starting indexer...`);
-    const provider = await this.getProvider();
+    const provider = await getProvider();
 
     const latestBlockNumberInDB = await this.transactionService.getLatestBlockInDB();
     this.logger.log(`Latest block in DB: ${latestBlockNumberInDB}`);
@@ -32,7 +33,7 @@ export class EthersService implements OnModuleInit {
     const latestBlockOnChain = await provider.getBlockNumber();
     this.logger.warn(`Latest on-chain block: ${latestBlockOnChain}`);
 
-    const wsProvider = await this.getWSProvider();
+    const wsProvider = await getWSProvider();
 
     wsProvider.on('block', block => {
       this.fetchNewBlock(block);
@@ -45,18 +46,9 @@ export class EthersService implements OnModuleInit {
     // }
   }
 
-  async getProvider(): Promise<Provider> {
-    // zkSync api endpoint
-    return new Provider('https://mainnet.era.zksync.io');
-  }
-
-  async getWSProvider(): Promise<ethers.providers.WebSocketProvider> {
-    return await new ethers.providers.WebSocketProvider('wss://mainnet.era.zksync.io/ws');
-  }
-
   async fetchNewBlock(blockNumber: number) {
     try {
-      const provider = await this.getProvider();
+      const provider = await getProvider();
 
       const latestConfirmedBlockNumber = blockNumber - confirmations;
       const latestBlock: BlockWithTransactions = await provider.getBlockWithTransactions(
@@ -92,7 +84,7 @@ export class EthersService implements OnModuleInit {
   }
 
   async getETHBalance(address: string): Promise<string> {
-    return ethers.utils.formatEther(await (await this.getProvider()).getBalance(address));
+    return ethers.utils.formatEther(await (await getProvider()).getBalance(address));
   }
 
   async getLatestOnChainBlockNumber(provider: Provider): Promise<number> {
@@ -100,7 +92,7 @@ export class EthersService implements OnModuleInit {
   }
 
   async getWholeBlock(blockNumber: string): Promise<BlockWithTransactions> {
-    const provider = await this.getProvider();
+    const provider = await getProvider();
     return await provider.getBlockWithTransactions(parseInt(blockNumber));
   }
 }
